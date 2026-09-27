@@ -18,7 +18,22 @@ docs/           Architecture, API, AI design and decision records
 ```
 
 > **Runs fully offline by default.** `MOCK_LLM=true` ships a deterministic mock
-> LLM + embedding provider, so every feature works with no API key and zero cost.
+> LLM + embedding provider, so every feature works with no API key and no real spend.
+
+## Key Engineering Highlights
+
+- **BM25 + inverted index** — hand-built, in-memory ranking index (no external search service)
+- **Min-heap top-k** — binary min-heap bounding candidate lists to the k best matches
+- **Reciprocal Rank Fusion** — principled merge of vector and keyword result lists
+- **PostgreSQL + pgvector** — HNSW cosine index powering semantic job/resume search
+- **Deterministic-first matching** — the score is computed in code; the LLM only explains it
+- **RAG** — chunking + vector retrieval grounding the match explanation
+- **AI agents + tool calling** — bounded loop, zod-validated tools, SSE event streaming
+- **MCP** — the same agent tools exposed over JSON-RPC stdio for external clients
+- **Prompt-injection & PII guardrails** — heuristic scanner on untrusted content, masking before provider calls
+- **Token/cost tracking** — every LLM call lands in a per-purpose ledger surfaced in metrics + UI
+- **Docker + GitHub Actions** — one-command compose stack and a full CI pipeline
+- **Automated tests** — unit, API integration, client component and live E2E suites
 
 ## Key features
 
@@ -42,7 +57,8 @@ docs/           Architecture, API, AI design and decision records
 - **Observability** — requestId-correlated JSON logs, `/health`, `/ready`,
   Prometheus `/metrics` (HTTP latency, cache hit-rate, queue depth, LLM tokens/cost).
 - **Cost tracking** — every provider call lands in a `LlmCall` ledger →
-  `/costs/summary` + UI dashboard. Mock calls are recorded as $0.
+  `/costs/summary` + UI dashboard. Mock calls are billed at placeholder prices,
+  so the dashboard reads ≈$0.
 
 ## Architecture
 
@@ -172,15 +188,66 @@ pnpm evals                    # AI evaluation suite (uses mock provider by defau
 pnpm smoke                    # in-process smoke test
 ```
 
-## Screenshots / demo
+## Screenshots
 
-> _Placeholder — pending screenshots._
->
-> - [ ] Login & dashboard
-> - [ ] Job board with parsed skill chips and semantic search
-> - [ ] Explainable match report (score ring, evidence chips, gap suggestions)
-> - [ ] Agent console with live SSE timeline
-> - [ ] Cost dashboard
+All views below run on the seeded synthetic demo data with the offline mock LLM.
+
+### Dashboard & Job Discovery
+
+![Login](docs/screenshots/login.png)
+_JWT sign-in with the seeded demo account (`demo@career.local`)._
+
+![Job board](docs/screenshots/job-board.png)
+_Job board with background-parsed postings, parsed skill chips and per-job resume matching._
+
+![Semantic search](docs/screenshots/semantic-search.png)
+_Hybrid semantic search — pgvector + BM25 fused via RRF — returns scored hits with snippets._
+
+![Job detail](docs/screenshots/job-detail.png)
+_Job detail card with LLM-parsed skill requirements and importance weighting._
+
+### Resume & Matching
+
+![Resume manager](docs/screenshots/resume-manager.png)
+_Resume manager: upload PDF/DOCX/TXT, background parsing and the extracted skill profile._
+
+<p align="center">
+  <img src="docs/screenshots/match-report.png" alt="Match report" width="640">
+</p>
+_Explainable match report: deterministic score ring, matched skills with evidence,
+missing skills with suggestions, plus a token/cost line._
+
+### AI Research Agent
+
+![Agent console](docs/screenshots/agent-console.png)
+_Research-agent console: live SSE timeline of the tool-calling loop and past-run stats._
+
+### Cost & Observability
+
+![Cost dashboard](docs/screenshots/cost-dashboard.png)
+_LLM cost dashboard fed by the per-call ledger — the mock provider keeps real spend at zero._
+
+## Demo Flow
+
+```
+Resume ──► Job ──► Parse ──► Search ──► Match ──► AI explanation ──► Agent research
+```
+
+1. **Resume** — upload PDF/DOCX/TXT; text extraction and parsing run in the
+   background worker and produce a structured skill profile.
+2. **Job** — paste a posting or fetch one from a URL (SSRF-guarded server-side).
+3. **Parse** — zod-validated structured output (retried on invalid model output);
+   embeddings are cached and jobs are indexed for both vector and BM25 search.
+4. **Search** — hybrid retrieval: pgvector cosine + BM25, fused with RRF,
+   bounded by a min-heap top-k.
+5. **Match** — deterministic weighted skill-coverage score with alias
+   normalisation and partial credit.
+6. **AI explanation** — the LLM explains the *computed* score with per-skill
+   evidence quotes and gap suggestions (RAG-grounded); degrades to score-only
+   without an LLM.
+7. **Agent research** — a bounded tool-calling loop (`web_search`, `fetch_page`,
+   `company_lookup`, `save_finding`) researches the role and company, streamed
+   over SSE; the same tools are exposed via MCP.
 
 ## Security notes
 
