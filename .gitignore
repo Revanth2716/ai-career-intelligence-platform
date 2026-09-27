@@ -1,0 +1,39 @@
+# ── Dependencies / builds ──────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+coverage/
+.vite/
+.turbo/
+
+# ── Secrets & environment ──────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!*.public.key
+
+# ── Runtime artifacts ──────────────────────────────────────────────────────
+uploads/
+*.log
+logs/
+
+# ── Local databases ────────────────────────────────────────────────────────
+*.sqlite
+*.sqlite3
+*.db
+pgdata/
+
+# ── Private user data (personal resumes, profile, tracker — never publish) ─
+job-skill/
+
+# ── OS / editor / tooling ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+.freebuff/

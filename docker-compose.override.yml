@@ -1,0 +1,33 @@
+# Development override: hot-reloading server (tsx watch) and client (vite).
+# Compose merges this automatically; for plain prod use:
+#   docker compose -f docker-compose.yml up
+services:
+  server:
+    image: node:22-alpine
+    working_dir: /app/apps/server
+    command: sh -c "corepack enable && pnpm install && pnpm exec prisma migrate deploy && pnpm dev"
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://career:career@db:5432/career?schema=public
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - uploads_dev:/app/uploads
+    build: !reset null
+
+  client:
+    image: node:22-alpine
+    working_dir: /app/apps/client
+    command: sh -c "corepack enable && pnpm install && pnpm dev"
+    environment:
+      VITE_API_URL: http://localhost:4000/api/v1
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    build: !reset null
+
+volumes:
+  uploads_dev:

@@ -1,0 +1,65 @@
+# AI evaluation cases.
+# - match cases exercise the deterministic scorer (always runnable, $0).
+# - parse cases exercise job parsing: with MOCK_LLM=true the deterministic
+#   parser is evaluated; with a real key the LLM pipeline is evaluated.
+# The runner fails (exit 1) when metrics regress below thresholds.
+
+matchCases:
+  - name: strong backend fit
+    resume:
+      summary: Fresher backend engineer.
+      skills: [python, javascript, sql, node, react, rest, testing, postgresql]
+      experience:
+        - title: Intern
+          company: Acme
+          bullets: [Built REST APIs with node and postgresql]
+      education: [{ degree: B.Tech CSE }]
+    job:
+      title: Junior Software Engineer
+      company: Booking Holdings
+      location: Bengaluru
+      summary: Full-stack junior engineer.
+      requirements:
+        - { skill: python, importance: 0.9 }
+        - { skill: java, importance: 0.7 }
+        - { skill: javascript, importance: 0.9 }
+        - { skill: sql, importance: 0.8 }
+        - { skill: rest, importance: 0.7 }
+        - { skill: docker, importance: 0.3 }
+    expectedScoreBand: [55, 90]
+
+  - name: cpp apprenticeship gap
+    resume:
+      summary: Fresher with OOP and testing focus.
+      skills: [python, java, sql, testing, aws]
+      experience: []
+      education: [{ degree: B.Tech CSE }]
+    job:
+      title: Apprentice C++ Developer
+      company: F5
+      location: Hyderabad
+      summary: C++ apprenticeship.
+      requirements:
+        - { skill: cpp, importance: 1 }
+        - { skill: oop, importance: 0.8 }
+        - { skill: linux, importance: 0.5 }
+        - { skill: testing, importance: 0.7 }
+    expectedScoreBand: [15, 55]
+
+parseCases:
+  - name: booking posting
+    text: >
+      Junior Software Engineer at Booking Holdings, Bengaluru.
+      Required: strong Python and Java skills, JavaScript, SQL and REST API
+      experience. Nice to have: Docker and React. We build travel products
+      at scale.
+    expectSkills: [python, java, javascript, sql, rest]
+    minF1: 0.6
+
+  - name: python developer posting
+    text: >
+      Junior Python Developer at Cuculus, Bengaluru. Fresh graduates welcome.
+      Must have: Python, Django or Flask, REST APIs, SQL. Bonus: Docker,
+      Linux, pytest.
+    expectSkills: [python, sql, rest]
+    minF1: 0.6

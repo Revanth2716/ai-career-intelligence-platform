@@ -1,0 +1,36 @@
+{
+  "name": "career-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Career Intelligence Platform — full-stack resume/job matching with RAG, agents and pgvector",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm --filter @career/shared build && pnpm -r run build",
+    "test": "pnpm -r run test",
+    "test:unit": "pnpm --filter @career/server run test:unit && pnpm --filter @career/client run test",
+    "test:integration": "pnpm --filter @career/server run test:integration",
+    "typecheck": "pnpm --filter @career/shared build && pnpm -r run typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "db:generate": "pnpm --filter @career/server exec prisma generate",
+    "db:migrate": "pnpm --filter @career/server exec prisma migrate dev",
+    "db:deploy": "pnpm --filter @career/server exec prisma migrate deploy",
+    "db:studio": "pnpm --filter @career/server exec prisma studio",
+    "seed": "pnpm --filter @career/server run seed",
+    "evals": "pnpm --filter @career/server run evals",
+    "mcp": "pnpm --filter @career/server run mcp",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.18.0"
+  }
+}

@@ -1,0 +1,234 @@
+// AI Career Intelligence Platform — Prisma schema
+// PostgreSQL 16 + pgvector. JSONB columns hold only schema-validated LLM
+// output (deliberate, documented denormalisation); everything else is 3NF.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum EntityStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum JobSource {
+  URL
+  MANUAL
+  SEED
+}
+
+enum ScoreSource {
+  DETERMINISTIC
+  LLM_EXPLAINED
+}
+
+enum AgentKind {
+  RESEARCH_JOB
+  VERIFY_COMPANY
+}
+
+enum AgentStatus {
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum LlmPurpose {
+  PARSE
+  MATCH
+  EMBED
+  AGENT
+  GUARDRAIL
+}
+
+enum CallStatus {
+  OK
+  ERROR
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  // functional index created via migration SQL: lower(email)
+  passwordHash String
+  name         String
+  role         Role           @default(USER)
+  createdAt    DateTime       @default(now())
+
+  refreshTokens RefreshToken[]
+  resumes       Resume[]
+  jobs          Job[]
+  matchReports  MatchReport[]
+  agentRuns     AgentRun[]
+  llmCalls      LlmCall[]
+  auditLogs     AuditLog[]
+
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  familyId  String // token-family id: replay of an old token revokes the family
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, tokenHash])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
+model Resume {
+  id         String       @id @default(uuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  rawText    String @db.Text
+  parsedJson Json?
+  status     EntityStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+
+  matchReports MatchReport[]
+
+  @@index([userId, createdAt])
+}
+
+model Job {
+  id               String       @id @default(uuid())
+  userId           String
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  company          String
+  location         String
+  url              String?
+  source           JobSource    @default(MANUAL)
+  rawText          String       @db.Text
+  status           EntityStatus @default(PENDING)
+  requirementsJson Json?
+  salaryMin        Int?
+  salaryMax        Int?
+  employmentType   String?
+  postedAt         DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  embeddings  JobEmbedding[]
+  matchReports MatchReport[]
+  agentRuns   AgentRun[]
+
+  @@unique([userId, url])
+  @@index([userId, createdAt])
+  @@index([company])
+  @@index([status])
+}
+
+model JobEmbedding {
+  id         String   @id @default(uuid())
+  jobId      String
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  chunkIndex Int
+  content    String   @db.Text
+  // vector(1536) column + HNSW cosine index created via migration SQL
+  vector     Unsupported("vector(1536)")?
+  model      String
+  tokenCount Int
+
+  @@unique([jobId, chunkIndex])
+}
+
+model MatchReport {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId    String
+  resume      Resume      @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  jobId       String
+  job         Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  score       Int // 0-100, CHECK constraint added via migration SQL
+  scoreSource ScoreSource @default(DETERMINISTIC)
+  matchedSkills   Json
+  missingSkills   Json
+  summary     String      @db.Text
+  citedChunkIdx  Json? // chunk indexes used as RAG context
+  model       String?
+  tokensIn    Int         @default(0)
+  tokensOut   Int         @default(0)
+  costUsd     Float       @default(0)
+  latencyMs   Int         @default(0)
+  createdAt   DateTime    @default(now())
+
+  @@unique([resumeId, jobId])
+  @@index([userId, createdAt])
+}
+
+model AgentRun {
+  id         String      @id @default(uuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId      String? // optional anchor job for RESEARCH_JOB / VERIFY_COMPANY
+  job        Job?        @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  kind       AgentKind
+  status     AgentStatus @default(RUNNING)
+  input      Json
+  output     Json?
+  steps      Json @default("[]")
+  startedAt  DateTime    @default(now())
+  finishedAt DateTime?
+  tokensIn   Int         @default(0)
+  tokensOut  Int         @default(0)
+  costUsd    Float       @default(0)
+
+  @@index([userId, startedAt])
+}
+
+model LlmCall {
+  id               String     @id @default(uuid())
+  userId           String?
+  user             User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  purpose          LlmPurpose
+  model            String
+  promptTokens     Int
+  completionTokens Int
+  costUsd          Float
+  latencyMs        Int
+  status           CallStatus @default(OK)
+  createdAt        DateTime   @default(now())
+
+  @@index([purpose, createdAt])
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id       String   @id @default(uuid())
+  userId   String?
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action   String
+  entity   String
+  entityId String?
+  ip       String?
+  meta     Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+}
