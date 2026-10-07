@@ -80,7 +80,11 @@ jobs:
           # made this step exit 0 having seeded nothing. Unset => bundled
           # db/seed demo data is used instead.
       - name: Run integration tests
-        run: pnpm test:integration
+        # @career/shared ships as compiled dist/, so it has to be built first or
+        # vite fails with "Failed to resolve entry for package @career/shared".
+        run: |
+          pnpm --filter @career/shared build
+          pnpm test:integration
         env:
           DATABASE_URL: 'postgresql://career:career@localhost:5432/career_test?schema=public'
           JWT_ACCESS_SECRET: 'ci-access-secret-000000000000'
@@ -101,6 +105,7 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
       - run: pnpm build
       - name: Docker build (server + client)
         run: |
