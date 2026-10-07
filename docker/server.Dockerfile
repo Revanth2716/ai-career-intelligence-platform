@@ -11,6 +11,10 @@ COPY apps/server/package.json apps/server/
 RUN pnpm install --frozen-lockfile
 COPY packages/shared packages/shared
 COPY apps/server apps/server
+# The server compiles against the generated Prisma client, but @prisma/client's
+# postinstall does not generate it in this slim layout, so tsc fails with
+# "has no exported member 'Prisma' / 'PrismaClient'". Generate explicitly.
+RUN pnpm --filter @career/server exec prisma generate
 RUN pnpm --filter @career/shared build && pnpm --filter @career/server build
 
 FROM node:22-alpine AS runtime
