@@ -61,7 +61,11 @@ jobs:
         run: pnpm --filter @career/server run seed
         env:
           DATABASE_URL: postgresql://career:career@localhost:5432/career_test?schema=public
-          JOB_SKILL_DIR: ${{ github.workspace }}/job-skill
+          # JOB_SKILL_DIR is deliberately left unset. It points at a private,
+          # git-ignored folder that does not exist on CI, and prisma/seed.ts
+          # resolves seedDir to JOB_SKILL_DIR whenever it is non-empty, so
+          # setting it made this step silently seed nothing instead of
+          # falling back to the bundled db/seed demo data.
       - name: Run integration tests
         run: pnpm test:integration
         env:
