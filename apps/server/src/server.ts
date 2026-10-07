@@ -1,7 +1,7 @@
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
-import { prisma, disconnectPrisma } from './lib/prisma.js';
+import { disconnectPrisma } from './lib/prisma.js';
 import { queue } from './jobs/queue.js';
 
 const app = createApp();

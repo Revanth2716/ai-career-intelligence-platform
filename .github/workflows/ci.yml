@@ -19,6 +19,11 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      # The @prisma/client postinstall does not reliably generate the client
+      # for this workspace layout. Without an explicit generate, `tsc` fails
+      # with "Namespace 'Prisma' has no exported member 'InputJsonValue' /
+      # 'JobWhereInput'" because the stale client types are still in place.
+      - run: pnpm db:generate
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:unit
@@ -37,7 +42,7 @@ jobs:
           POSTGRES_PASSWORD: career
           POSTGRES_DB: career_test
         ports:
-          - 5432:5432
+          - '5432:5432'
         options: >-
           --health-cmd "pg_isready -U career"
           --health-interval 5s
@@ -53,6 +58,14 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - name: Enable pgvector extension
+        run: |
+          PGPASSWORD=career psql \
+            --host=localhost --port=5432 \
+            --username=career --dbname=career_test \
+            --set ON_ERROR_STOP=1 \
+            --file=db/init/01-extensions.sql
       - name: Apply migrations
         run: pnpm --filter @career/server exec prisma migrate deploy
         env:
@@ -61,6 +74,11 @@ jobs:
         run: pnpm --filter @career/server run seed
         env:
           DATABASE_URL: 'postgresql://career:career@localhost:5432/career_test?schema=public'
+          # JOB_SKILL_DIR is intentionally left unset. It points at a private,
+          # git-ignored folder that is absent on CI, and prisma/seed.ts resolves
+          # seedDir to JOB_SKILL_DIR whenever it is non-empty, so setting it
+          # made this step exit 0 having seeded nothing. Unset => bundled
+          # db/seed demo data is used instead.
       - name: Run integration tests
         run: pnpm test:integration
         env:
@@ -88,11 +106,18 @@ jobs:
         run: |
           docker build -f docker/server.Dockerfile -t career-server:ci .
           docker build -f docker/client.Dockerfile -t career-client:ci .
+
   ai-evals:
     name: AI evaluations (opt-in)
     runs-on: ubuntu-latest
     needs: [quality]
-    if: "${{ secrets.OPENAI_API_KEY != '' }}"
+    # The `secrets` context is not available in ANY `if` condition - neither
+    # job-level nor step-level - which made GitHub reject this whole workflow
+    # file, so no job ever started and every run failed with zero check runs.
+    # Job-level `env` may reference secrets, so expose the key there and gate
+    # the step on `env` instead, which is allowed in a step `if`.
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -102,7 +127,8 @@ jobs:
         with:
           node-version: '22'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm evals
+      - name: Run AI evals
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        run: pnpm evals
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           MOCK_LLM: 'false'

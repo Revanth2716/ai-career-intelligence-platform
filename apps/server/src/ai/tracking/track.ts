@@ -64,10 +64,6 @@ export interface TrackResult {
   latencyMs: number;
 }
 
-interface UsageLike {
-  usage: { promptTokens: number; completionTokens: number };
-}
-
 /**
  * Wrap an awaited provider call: time it, track it, return tokens/cost.
  * Usage is read via `extractUsage` (defaults to a `.usage` property when the

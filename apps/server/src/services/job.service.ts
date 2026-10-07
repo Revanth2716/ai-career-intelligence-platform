@@ -5,7 +5,6 @@ import { ParsedJobSchema, type ParsedJob } from '@career/shared';
 import { parseJobDeterministic } from './job-parser.service.js';
 import { parseJobWithLlm } from '../ai/pipelines/parse-job.js';
 import { indexJobEmbeddings } from '../ai/rag/index.js';
-import { getContainer } from '../lib/container.js';
 import { cacheService } from './cache.service.js';
 import { logger } from '../lib/logger.js';
 

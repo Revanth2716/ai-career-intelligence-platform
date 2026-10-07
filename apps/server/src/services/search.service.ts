@@ -4,7 +4,6 @@ import { retrieveChunks } from '../ai/rag/retrieve.js';
 import { Bm25Index } from '../lib/algorithms/bm25.js';
 import { reciprocalRankFusion } from '../lib/algorithms/rrf.js';
 import { cacheService } from './cache.service.js';
-import { getContainer } from '../lib/container.js';
 
 /**
  * Hybrid job search: pgvector semantic retrieval + BM25 lexical ranking,

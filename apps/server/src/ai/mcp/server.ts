@@ -16,12 +16,6 @@ interface RpcRequest {
   params?: unknown;
 }
 
-interface JsonSchemaType {
-  type: string;
-  properties?: Record<string, unknown>;
-  required?: string[];
-}
-
 async function main(): Promise<void> {
   // Imported lazily so `pnpm mcp` doesn't boot the whole server env check.
   process.env.NODE_ENV = process.env.NODE_ENV ?? 'development';

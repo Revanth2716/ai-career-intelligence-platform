@@ -61,7 +61,7 @@ export class MinHeap<T> {
 
   private siftDown(i: number): void {
     const n = this.items.length;
-    // eslint-disable-next-line no-constant-condition
+     
     while (true) {
       const left = 2 * i + 1;
       const right = 2 * i + 2;

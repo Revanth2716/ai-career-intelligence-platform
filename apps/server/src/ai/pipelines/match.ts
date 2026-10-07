@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { MatchedSkillSchema, MissingSkillSchema } from '@career/shared';
 import { getContainer } from '../../lib/container.js';
 import { trackCall } from '../tracking/track.js';
-import { matchExplainSystem, PROMPT_VERSIONS } from '../prompts/index.js';
+import { matchExplainSystem } from '../prompts/index.js';
 import { getStructuredOutput } from './structured.js';
 import { maskPii } from '../guardrails/pii.js';
 import { wrapUntrusted } from '../guardrails/injection-scan.js';

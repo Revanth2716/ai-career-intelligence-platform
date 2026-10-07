@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { env, features } from '../config/env.js';
-import { BadRequestError } from '../lib/errors.js';
 import { cacheService, contentHash } from '../services/cache.service.js';
 import { fetchPageText } from '../services/fetch-url.service.js';
 

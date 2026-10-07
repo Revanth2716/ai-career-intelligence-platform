@@ -24,11 +24,6 @@ export interface IndexedDoc {
   text: string;
 }
 
-interface Posting {
-  docId: string;
-  tf: number;
-}
-
 export class InvertedIndex {
   /** term → (docId → term frequency) */
   private index = new Map<string, Map<string, number>>();

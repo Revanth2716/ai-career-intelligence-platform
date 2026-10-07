@@ -6,7 +6,6 @@ import { scoreMatch } from './scorer.js';
 import { explainMatchWithLlm } from '../../ai/pipelines/match.js';
 import { retrieveChunks } from '../../ai/rag/retrieve.js';
 import { cacheService } from '../../services/cache.service.js';
-import { getContainer } from '../../lib/container.js';
 import { logger } from '../../lib/logger.js';
 
 /**

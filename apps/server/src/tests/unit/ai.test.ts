@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { scanForInjection, wrapUntrusted } from '../../ai/guardrails/injection-scan.js';
 import { maskPii } from '../../ai/guardrails/pii.js';
 import { chunkText } from '../../ai/rag/chunk.js';

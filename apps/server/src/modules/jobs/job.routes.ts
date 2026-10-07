@@ -1,6 +1,6 @@
 import { Router, type Request } from 'express';
 import { z } from 'zod';
-import { JobFromUrlSchema, JobCreateSchema, ParsedJobSchema } from '@career/shared';
+import { JobFromUrlSchema, JobCreateSchema } from '@career/shared';
 import { asyncHandler } from '../../lib/asyncHandler.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { aiRateLimit } from '../../middleware/rate-limit.js';
@@ -9,7 +9,6 @@ import { jobService } from '../../services/job.service.js';
 import { searchService } from '../../services/search.service.js';
 import { fetchPageText } from '../../services/fetch-url.service.js';
 import { queue } from '../../jobs/queue.js';
-import { getContainer } from '../../lib/container.js';
 import { prisma } from '../../lib/prisma.js';
 
 /**
